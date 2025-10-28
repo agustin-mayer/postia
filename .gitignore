@@ -1,0 +1,5 @@
+venv
+.snapshots
+.alpackages
+__pycache__
+.env

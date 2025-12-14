@@ -93,22 +93,33 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
         raise HTTPException(status_code=401, detail="Token inválido")
 
 
+    start_time = time.time()
+    last_time = start_time
+
+    def log(msg):
+        nonlocal last_time
+        now = time.time()
+        total_elapsed = now - start_time
+        step_duration = now - last_time
+        last_time = now
+        print(f"[{total_elapsed:.2f}s] (+{step_duration:.2f}s) {msg}")
+
     
-    print(f"\n{'='*60}")
-    print(f"[INICIO] Nueva publicación solicitada")
-    print(f"  Título: {payload.titulo}")
-    print(f"  Precio: {payload.precio}")
-    print(f"  Categoría: {payload.categoria}")
-    print(f"  Estado: {payload.estado}")
-    print(f"  Descripción: {payload.descripcion[:50]}..." if len(payload.descripcion) > 50 else f"  Descripción: {payload.descripcion}")
-    print(f"{'='*60}\n")
+    log(f"\n{'='*60}")
+    log(f"[INICIO] Nueva publicación solicitada")
+    log(f"  Título: {payload.titulo}")
+    log(f"  Precio: {payload.precio}")
+    log(f"  Categoría: {payload.categoria}")
+    log(f"  Estado: {payload.estado}")
+    log(f"  Descripción: {payload.descripcion[:50]}..." if len(payload.descripcion) > 50 else f"  Descripción: {payload.descripcion}")
+    log(f"{'='*60}\n")
 
     driver = launch_driver()
     try:
-        print("[STEP 1] Navegando a Facebook Marketplace...")
+        log("[STEP 1] Navegando a Facebook Marketplace...")
         driver.get("https://www.facebook.com/marketplace/create/item")
 
-        print("[STEP 2] Esperando que cargue la página...")
+        log("[STEP 2] Esperando que cargue la página...")
         WebDriverWait(driver, 30).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
@@ -117,12 +128,12 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
 
 
         # ====== Capturar todos los inputs visibles ======
-        print("[STEP 3] Buscando campos de entrada...")
+        log("[STEP 3] Buscando campos de entrada...")
         try:
             inputs = WebDriverWait(driver, 15).until(
                 EC.presence_of_all_elements_located((By.XPATH, '//input[@type="text"]'))
             )
-            print(f"[DEBUG] ✅ Inputs detectados: {len(inputs)}")
+            log(f"[DEBUG] ✅ Inputs detectados: {len(inputs)}")
             
             # Mostrar información de cada input
             for i, inp in enumerate(inputs):
@@ -130,11 +141,11 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
                     placeholder = inp.get_attribute("placeholder") or "Sin placeholder"
                     aria_label = inp.get_attribute("aria-label") or "Sin aria-label"
                     visible = inp.is_displayed()
-                    print(f"  Input {i}: placeholder='{placeholder}', aria-label='{aria_label}', visible={visible}")
+                    log(f"  Input {i}: placeholder='{placeholder}', aria-label='{aria_label}', visible={visible}")
                 except Exception as e:
-                    print(f"  Input {i}: Error al obtener info - {e}")
+                    log(f"  Input {i}: Error al obtener info - {e}")
         except Exception as e:
-            print(f"[ERROR] ❌ No se encontraron inputs: {e}")
+            log(f"[ERROR] ❌ No se encontraron inputs: {e}")
             raise Exception(f"No se detectaron campos de entrada.")
 
         if len(inputs) < 2:
@@ -144,37 +155,37 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
         precio_input = inputs[1]
 
         # Completar campos básicos
-        print(f"[STEP 4] Completando título: '{payload.titulo}'")
+        log(f"[STEP 4] Completando título: '{payload.titulo}'")
         try:
             titulo_input.clear()
             titulo_input.send_keys(payload.titulo)
             time.sleep(0.1)
             valor_actual = titulo_input.get_attribute("value")
-            print(f"[DEBUG] ✅ Título ingresado. Valor actual: '{valor_actual}'")
+            log(f"[DEBUG] ✅ Título ingresado. Valor actual: '{valor_actual}'")
         except Exception as e:
-            print(f"[ERROR] ❌ Error al ingresar título: {e}")
+            log(f"[ERROR] ❌ Error al ingresar título: {e}")
             raise
 
-        print(f"[STEP 5] Completando precio: '{payload.precio}'")
+        log(f"[STEP 5] Completando precio: '{payload.precio}'")
         try:
             precio_input.clear()
             precio_input.send_keys(payload.precio)
             time.sleep(0.1)
             valor_actual = precio_input.get_attribute("value")
-            print(f"[DEBUG] ✅ Precio ingresado. Valor actual: '{valor_actual}'")
+            log(f"[DEBUG] ✅ Precio ingresado. Valor actual: '{valor_actual}'")
         except Exception as e:
-            print(f"[ERROR] ❌ Error al ingresar precio: {e}")
+            log(f"[ERROR] ❌ Error al ingresar precio: {e}")
             raise
 
 
 
         # ====== Scroll hasta el final del formulario ======
-        print("[STEP 6] Haciendo scroll...")
+        log("[STEP 6] Haciendo scroll...")
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(0.1)
 
         # ====== Categoría ======
-        print(f"[STEP 7] Seleccionando categoría: '{payload.categoria}'")
+        log(f"[STEP 7] Seleccionando categoría: '{payload.categoria}'")
         try:
             categoria_div = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, '//div[.//text()[contains(., "Categoría")]]/following-sibling::div'))
@@ -183,7 +194,7 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
             time.sleep(0.1)
             driver.execute_script("arguments[0].click();", categoria_div)
             time.sleep(0.1)
-            print("[DEBUG] ✅ Dropdown de categoría abierto")
+            log("[DEBUG] ✅ Dropdown de categoría abierto")
 
             opcion = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, f'//span[contains(text(), "{payload.categoria}")]'))
@@ -191,14 +202,14 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
             driver.execute_script("arguments[0].scrollIntoView(true);", opcion)
             time.sleep(0.1)
             driver.execute_script("arguments[0].click();", opcion)
-            print(f"[DEBUG] ✅ Categoría '{payload.categoria}' seleccionada")
+            log(f"[DEBUG] ✅ Categoría '{payload.categoria}' seleccionada")
         except Exception as e:
-            print(f"[WARN] ⚠️ No se pudo seleccionar categoría: {e}")
+            log(f"[WARN] ⚠️ No se pudo seleccionar categoría: {e}")
 
 
 
         # ====== Estado ======
-        print(f"[STEP 8] Seleccionando estado: '{payload.estado}'")
+        log(f"[STEP 8] Seleccionando estado: '{payload.estado}'")
         try:
             estado_div = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, '//div[.//text()[contains(., "Estado")]]/following-sibling::div'))
@@ -207,7 +218,7 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
             time.sleep(0.1)
             driver.execute_script("arguments[0].click();", estado_div)
             time.sleep(0.1)
-            print("[DEBUG] ✅ Dropdown de estado abierto")
+            log("[DEBUG] ✅ Dropdown de estado abierto")
 
             opcion_estado = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, f'//span[contains(text(), "{payload.estado}")]'))
@@ -215,12 +226,12 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
             driver.execute_script("arguments[0].scrollIntoView(true);", opcion_estado)
             time.sleep(0.1)
             driver.execute_script("arguments[0].click();", opcion_estado)
-            print(f"[DEBUG] ✅ Estado '{payload.estado}' seleccionado")
+            log(f"[DEBUG] ✅ Estado '{payload.estado}' seleccionado")
         except Exception as e:
-            print(f"[WARN] ⚠️ No se pudo seleccionar estado: {e}")
+            log(f"[WARN] ⚠️ No se pudo seleccionar estado: {e}")
 
         # ====== Descripción ======
-        print(f"[STEP 9] Completando descripción...")
+        log(f"[STEP 9] Completando descripción...")
         try:
             desc_area = WebDriverWait(driver, 15).until(
                 EC.presence_of_element_located((By.XPATH, '//textarea'))
@@ -228,14 +239,14 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
             desc_area.clear()
             desc_area.send_keys(payload.descripcion)
             time.sleep(0.1)
-            print(f"[DEBUG] ✅ Descripción ingresada: '{payload.descripcion[:50]}...'")
+            log(f"[DEBUG] ✅ Descripción ingresada: '{payload.descripcion[:50]}...'")
         except Exception as e:
-            print(f"[WARN] ⚠️ Error al ingresar descripción: {e}")
+            log(f"[WARN] ⚠️ Error al ingresar descripción: {e}")
         
 
         
         # ====== Scroll profundo hasta la sección de entrega ======
-        print("[STEP 10] Desplazando hasta la sección de entrega...")
+        log("[STEP 10] Desplazando hasta la sección de entrega...")
         try:
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             contenedores = driver.find_elements(By.XPATH, '//div[@role="main" or @aria-label="Marketplace" or @class]')
@@ -247,10 +258,10 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
             driver.execute_script("window.scrollBy(0, 1000);")
             time.sleep(0.2)
         except Exception as e:
-            print(f"[WARN] ⚠️ No se pudo hacer scroll profundo: {e}")
+            log(f"[WARN] ⚠️ No se pudo hacer scroll profundo: {e}")
 
         # ====== Marcar checkboxes de entrega ======
-        print("[STEP 11] Marcando opciones de entrega...")
+        log("[STEP 11] Marcando opciones de entrega...")
         def marcar_checkbox(texto):
             try:
                 bloque = WebDriverWait(driver, 10).until(
@@ -261,21 +272,21 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
                 estado = bloque.get_attribute("aria-checked")
                 if estado != "true":
                     driver.execute_script("arguments[0].click();", bloque)
-                    print(f"[DEBUG] ✅ '{texto}' marcado correctamente")
+                    log(f"[DEBUG] ✅ '{texto}' marcado correctamente")
                 else:
-                    print(f"[DEBUG] ℹ️ '{texto}' ya estaba marcado")
+                    log(f"[DEBUG] ℹ️ '{texto}' ya estaba marcado")
             except Exception as e:
-                print(f"[WARN] ⚠️ No se pudo marcar '{texto}': {e}")
+                log(f"[WARN] ⚠️ No se pudo marcar '{texto}': {e}")
 
         marcar_checkbox("Retiro en la puerta")
         marcar_checkbox("Entrega en la puerta")
 
         time.sleep(0.1)
         
-        print("[DEBUG] ✅ Formulario completado correctamente")
+        log("[DEBUG] ✅ Formulario completado correctamente")
 
         # ====== Guardar borrador y salir ======
-        print("[STEP 12] Intentando guardar borrador...")
+        log("[STEP 12] Intentando guardar borrador...")
         try:
             guardar_btn = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((
@@ -286,15 +297,15 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
             driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", guardar_btn)
             time.sleep(0.1)
             driver.execute_script("arguments[0].click();", guardar_btn)
-            print("[DEBUG] ✅ Botón 'Guardar borrador' clickeado")
+            log("[DEBUG] ✅ Botón 'Guardar borrador' clickeado")
             time.sleep(1)
         except Exception as e:
-            print(f"[WARN] ⚠️ No se pudo guardar borrador: {e}")
+            log(f"[WARN] ⚠️ No se pudo guardar borrador: {e}")
 
         # ====== Finalizar ======
-        print(f"\n{'='*60}")
-        print("[FINALIZADO] ✅ Todo el proceso completado exitosamente")
-        print(f"{'='*60}\n")
+        log(f"\n{'='*60}")
+        log("[FINALIZADO] ✅ Todo el proceso completado exitosamente")
+        log(f"{'='*60}\n")
         return {"status": "ok", "message": "Formulario completado y guardado como borrador."}
 
     except Exception as e:
@@ -307,6 +318,6 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
     finally:
         try:
             driver.quit()
-            print("[CLOSE] Navegador cerrado correctamente")
+            log("[CLOSE] Navegador cerrado correctamente")
         except Exception:
             pass

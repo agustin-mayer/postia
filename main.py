@@ -245,7 +245,7 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
                 except Exception:
                     continue
             driver.execute_script("window.scrollBy(0, 1000);")
-            time.sleep(1)
+            time.sleep(0.2)
         except Exception as e:
             print(f"[WARN] ⚠️ No se pudo hacer scroll profundo: {e}")
 
@@ -257,7 +257,7 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
                     EC.presence_of_element_located((By.XPATH, f'//span[contains(., "{texto}")]/ancestor::div[@role="checkbox" or @aria-checked]'))
                 )
                 driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", bloque)
-                time.sleep(0.1)
+                # time.sleep(0.1)
                 estado = bloque.get_attribute("aria-checked")
                 if estado != "true":
                     driver.execute_script("arguments[0].click();", bloque)

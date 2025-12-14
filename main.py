@@ -112,7 +112,7 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
         WebDriverWait(driver, 30).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
-        time.sleep(3)  # Espera adicional para carga completa
+        time.sleep(1)  # Espera adicional para carga completa
         
 
 
@@ -148,7 +148,7 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
         try:
             titulo_input.clear()
             titulo_input.send_keys(payload.titulo)
-            time.sleep(0.5)
+            time.sleep(0.1)
             valor_actual = titulo_input.get_attribute("value")
             print(f"[DEBUG] ✅ Título ingresado. Valor actual: '{valor_actual}'")
         except Exception as e:
@@ -159,7 +159,7 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
         try:
             precio_input.clear()
             precio_input.send_keys(payload.precio)
-            time.sleep(0.5)
+            time.sleep(0.1)
             valor_actual = precio_input.get_attribute("value")
             print(f"[DEBUG] ✅ Precio ingresado. Valor actual: '{valor_actual}'")
         except Exception as e:
@@ -171,7 +171,7 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
         # ====== Scroll hasta el final del formulario ======
         print("[STEP 6] Haciendo scroll...")
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(0.5)
+        time.sleep(0.1)
 
         # ====== Categoría ======
         print(f"[STEP 7] Seleccionando categoría: '{payload.categoria}'")
@@ -180,16 +180,16 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
                 EC.element_to_be_clickable((By.XPATH, '//div[.//text()[contains(., "Categoría")]]/following-sibling::div'))
             )
             driver.execute_script("arguments[0].scrollIntoView(true);", categoria_div)
-            time.sleep(0.3)
+            time.sleep(0.1)
             driver.execute_script("arguments[0].click();", categoria_div)
-            time.sleep(0.5)
+            time.sleep(0.1)
             print("[DEBUG] ✅ Dropdown de categoría abierto")
 
             opcion = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, f'//span[contains(text(), "{payload.categoria}")]'))
             )
             driver.execute_script("arguments[0].scrollIntoView(true);", opcion)
-            time.sleep(0.3)
+            time.sleep(0.1)
             driver.execute_script("arguments[0].click();", opcion)
             print(f"[DEBUG] ✅ Categoría '{payload.categoria}' seleccionada")
         except Exception as e:
@@ -204,16 +204,16 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
                 EC.element_to_be_clickable((By.XPATH, '//div[.//text()[contains(., "Estado")]]/following-sibling::div'))
             )
             driver.execute_script("arguments[0].scrollIntoView(true);", estado_div)
-            time.sleep(0.3)
+            time.sleep(0.1)
             driver.execute_script("arguments[0].click();", estado_div)
-            time.sleep(0.5)
+            time.sleep(0.1)
             print("[DEBUG] ✅ Dropdown de estado abierto")
 
             opcion_estado = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, f'//span[contains(text(), "{payload.estado}")]'))
             )
             driver.execute_script("arguments[0].scrollIntoView(true);", opcion_estado)
-            time.sleep(0.3)
+            time.sleep(0.1)
             driver.execute_script("arguments[0].click();", opcion_estado)
             print(f"[DEBUG] ✅ Estado '{payload.estado}' seleccionado")
         except Exception as e:
@@ -227,7 +227,7 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
             )
             desc_area.clear()
             desc_area.send_keys(payload.descripcion)
-            time.sleep(0.5)
+            time.sleep(0.1)
             print(f"[DEBUG] ✅ Descripción ingresada: '{payload.descripcion[:50]}...'")
         except Exception as e:
             print(f"[WARN] ⚠️ Error al ingresar descripción: {e}")
@@ -257,7 +257,7 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
                     EC.presence_of_element_located((By.XPATH, f'//span[contains(., "{texto}")]/ancestor::div[@role="checkbox" or @aria-checked]'))
                 )
                 driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", bloque)
-                time.sleep(0.3)
+                time.sleep(0.1)
                 estado = bloque.get_attribute("aria-checked")
                 if estado != "true":
                     driver.execute_script("arguments[0].click();", bloque)
@@ -270,7 +270,7 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
         marcar_checkbox("Retiro en la puerta")
         marcar_checkbox("Entrega en la puerta")
 
-        time.sleep(0.5)
+        time.sleep(0.1)
         
         print("[DEBUG] ✅ Formulario completado correctamente")
 
@@ -284,10 +284,10 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
                 ))
             )
             driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", guardar_btn)
-            time.sleep(0.3)
+            time.sleep(0.1)
             driver.execute_script("arguments[0].click();", guardar_btn)
             print("[DEBUG] ✅ Botón 'Guardar borrador' clickeado")
-            time.sleep(3)
+            time.sleep(1)
         except Exception as e:
             print(f"[WARN] ⚠️ No se pudo guardar borrador: {e}")
 

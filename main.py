@@ -123,7 +123,7 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
         WebDriverWait(driver, 30).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
-        time.sleep(1)  # Espera adicional para carga completa
+        # time.sleep(1)  # Optimización: Eliminada espera adicional innecesaria
         
 
 
@@ -236,10 +236,21 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
             desc_area = WebDriverWait(driver, 15).until(
                 EC.presence_of_element_located((By.XPATH, '//textarea'))
             )
-            desc_area.clear()
-            desc_area.send_keys(payload.descripcion)
+            # Optimización V2: Usar setter nativo + eventos para React/Facebook
+            # Esto "engaña" a React para que detecte el cambio de valor sin tipear todo
+            driver.execute_script("""
+                let input = arguments[0];
+                let value = arguments[1];
+                let nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
+                nativeInputValueSetter.call(input, value);
+                input.dispatchEvent(new Event('input', { bubbles: true}));
+                input.dispatchEvent(new Event('change', { bubbles: true}));
+            """, desc_area, payload.descripcion)
+            
+            # Pequeña pausa para asegurar procezamiento del evento
             time.sleep(0.1)
-            log(f"[DEBUG] ✅ Descripción ingresada: '{payload.descripcion[:50]}...'")
+            
+            log(f"[DEBUG] ✅ Descripción ingresada (Optimized V2)")
         except Exception as e:
             log(f"[WARN] ⚠️ Error al ingresar descripción: {e}")
         
@@ -248,15 +259,9 @@ def publicar(payload: PublicacionPayload, x_agent_token: str = Header(default=""
         # ====== Scroll profundo hasta la sección de entrega ======
         log("[STEP 10] Desplazando hasta la sección de entrega...")
         try:
+            # Optimización: Scroll directo al fondo una vez, sin iterar locamente
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            contenedores = driver.find_elements(By.XPATH, '//div[@role="main" or @aria-label="Marketplace" or @class]')
-            for c in contenedores:
-                try:
-                    driver.execute_script("arguments[0].scrollTop = arguments[0].scrollHeight;", c)
-                except Exception:
-                    continue
-            driver.execute_script("window.scrollBy(0, 1000);")
-            time.sleep(0.2)
+            time.sleep(0.5) 
         except Exception as e:
             log(f"[WARN] ⚠️ No se pudo hacer scroll profundo: {e}")
 
